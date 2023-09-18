@@ -1,0 +1,99 @@
+map $arg_blablaservispwa $tag_new_destination {
+    '1'    /pwa;
+}
+
+server {
+
+    server_name "domen3.domen2.domen1";
+#    ssl_certificate /etc/letsencrypt/live/domen3.domen2.domen1/fullchain.pem; # managed by Certbot
+#    ssl_certificate_key /etc/letsencrypt/live/domen3.domen2.domen1/privkey.pem; # managed
+    include /etc/nginx/includes/00_server_defaults.conf;
+
+
+location ~ /manifest.(webmanifest|json)$
+{
+        root /home/www/blablaservis/boiler/www;
+        set $root_path /home/www/blablaservis/boiler/www;
+        index index.php;
+
+    include /etc/nginx/factcgi_params;
+    add_header       X-Host          $host always;
+    add_header Cache-Control 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0' always;
+
+    fastcgi_pass mbst_php72:9000;
+    fastcgi_param SERVER_NAME $host;
+    fastcgi_index   index.php;
+    fastcgi_param   SCRIPT_FILENAME /home/www/blablaservis/boiler/www/index.php;
+    #fastcgi_split_path_info ^(.+\.php)(/.+)$;
+    fastcgi_read_timeout 10080;
+    fastcgi_buffer_size 32k;
+    fastcgi_buffers 4 32k;
+    add_header rt-Fastcgi-Cache $upstream_cache_status always;
+
+    include /etc/nginx/includes/CORS/options.conf;
+    include /etc/nginx/includes/CORS/get.conf;
+    include /etc/nginx/includes/CORS/post.conf;
+    include /etc/nginx/includes/CORS/put.conf;
+    include /etc/nginx/includes/CORS/delete.conf;
+
+}
+
+location ~ /pwa/(.+)*$
+        {
+        root /home/releases/mu_vue_2/current/dist;
+        access_log      /var/log/nginx/pwa.log;
+        error_log       /var/log/nginx/pwa_error.log debug;
+        index index.html;
+        include /etc/nginx/includes/CORS/options.conf;
+        include /etc/nginx/includes/CORS/get.conf;
+        include /etc/nginx/includes/CORS/post.conf;
+        include /etc/nginx/includes/CORS/put.conf;
+        include /etc/nginx/includes/CORS/delete.conf;
+        rewrite ^/pwa/(\d+)$ /pwa/index.html?$1 break;
+        #rewrite ^(.*)$ /pwa/index.html?$1 break;
+        try_files $uri /pwa/index.html?$uri;
+        }
+
+location /
+{
+
+    error_page 420 = @tags_redirects;
+    if ( $args ~ "blablaservispwa=" ) { return 420; }
+
+        proxy_set_header Host domen2.domen1;
+        proxy_pass https://domen2.domen1;
+        #proxy_pass https://domen2.domen1$request_uri;
+
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP $remote_addr;
+
+}
+
+location = /service-worker.js {
+	root /home/releases/mu_vue_2/current/dist;
+	try_files $uri /pwa/service-worker.js;
+}
+
+
+location @tags_redirects {
+       root /home/releases/mu_vue_2/current/dist;
+       access_log      /var/log/nginx/pwa.log;
+       rewrite ^(.*)$ /pwa/index.html?$1 break;
+}
+
+}
+
+server {
+    server_name "domen3-admin.domen2.domen1";
+#    ssl_certificate /etc/letsencrypt/live/domen3-admin.domen2.domen1/fullchain.pem; # managed by Certbot
+#    ssl_certificate_key /etc/letsencrypt/live/domen3-admin.domen2.domen1/privkey.pem; # managed
+    include /etc/nginx/includes/00_server_defaults.conf;
+    include /etc/nginx/includes/10_rootpath_blablaservis.conf;
+    include /etc/nginx/includes/20_dynamic_files.conf;
+    include /etc/nginx/includes/21_dynamic_blablaservis.conf;
+    include /etc/nginx/includes/40_static_files.conf;
+    include /etc/nginx/includes/50_bots.conf;
+    include /etc/nginx/includes/60_jenkins.conf;
+    include /etc/nginx/includes/70_cache.conf;
+}
+

@@ -1,0 +1,30 @@
+server {
+    server_name "domen3.domen2.domen1";
+#    ssl_certificate /etc/letsencrypt/live/domen3.domen2.domen1/fullchain.pem; # managed by Certbot
+#    ssl_certificate_key /etc/letsencrypt/live/domen3.domen2.domen1/privkey.pem; # managed
+    include /etc/nginx/includes/00_server_defaults.conf;
+
+location /
+{
+        proxy_set_header Host domen1level;
+        proxy_pass https://domen1level;
+     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+     proxy_set_header X-Real-IP $remote_addr;
+}
+}
+
+server {
+    server_name "domen3-admin.domen2.domen1";
+#    ssl_certificate /etc/letsencrypt/live/domen3-admin.domen2.domen1/fullchain.pem; # managed by Certbot
+#    ssl_certificate_key /etc/letsencrypt/live/domen3-admin.domen2.domen1/privkey.pem; # managed
+    include /etc/nginx/includes/00_server_defaults.conf;
+
+location /
+{
+        proxy_set_header Host domen2level;
+        proxy_pass https://domen2level;
+       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+       proxy_set_header X-Real-IP $remote_addr;
+}
+}
+
